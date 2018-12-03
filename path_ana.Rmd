@@ -1,0 +1,96 @@
+
+* [利用 R 语言对用户进行深度挖掘 | 统计之都](https://cosx.org/2017/01/deep-mining-users-r/)
+路径依赖的方式
+    
+>
+漏斗图适合于单路径转化问题，如果涉及到多路径（点击完一个按钮后有多个按钮同时提供选择）情况时，可以使用路径分析的方法，路径分析更加基础、更加全面、更加丰富、更能真实再现玩家在游戏中的行为轨迹。
+>
+比如利用 sunburst 事件路径图对玩家典型的、频繁的模式识别，利用基于时序的关联规则发现前后路径的关系。
+
+`sunburstR`
+
+>
+我们可以利用基于时序的关联规则来研究玩家的点击情况。目的是想找出玩家点击玩牌前一部分的点击情况。在 R 中，可以使用 arulesSequences 包中的核心函数 cspade 实现。此分析的关键是如何将普通数据集转换成模型能识别的事务型数据集。
+
+<input type="checkbox" id="checkbox1" class="styled">R 语言游戏数据分析 这书值得买
+
+Game_DataMining_With_R
+
+```{r}
+library(data.table)
+data_click <- fread(here::here('data','第7章','data_click.csv'))
+```
+
+```{r}
+library(tidyverse)
+data_click_new <- 
+    data_click %>% 
+    set_names('id','event','event_id') %>% 
+    # 11304 是开始游戏
+    # dim
+    # head
+    group_by(id) %>% 
+    filter(sum(event_id == 11034) > 0)
+    # 研究开始游戏的用户
+```
+
+```{r}
+library(arulesSequences)
+data_click_new %>% 
+    as.data.frame() %>% 
+    mutate(
+        click = 
+            event_id %>% 
+            as.factor %>% 
+            as(.,'transactions')
+    )
+as(as.factor(data_click_new$event_id),'transactions')
+arulesSequences::
+```
+
+```{r}
+tmp_data <- data.frame(click = data_click_new$event_id)
+tmp_data$click <- as.factor(tmp_data$click)
+data_click_tran <- as(tmp_data,'transactions')
+transactionInfo(data_click_tran)$sequenceID <- data_click_new$id
+transactionInfo(data_click_tran)$eventID <- data_click_new$event
+data_click_tran
+```
+
+为什么不能pipeline
+https://yq.aliyun.com/articles/385501
+
+```{r}
+summary(data_click_tran)
+```
+
+```{r}
+inspect(data_click_tran[1:6])
+```
+
+```{r}
+itemFrequencyPlot(data_click_tran,topN=20)
+```
+
+```{r}
+start_time <- Sys.time()
+myrules <- 
+    cspade(data_click_tran,parameter = list(support = 0, maxlen = 2), control = list(verbose = T))
+end_time <- Sys.time()
+end_time - start_time
+```
+
+cspade Error in file(con, "r") : cannot open the connection
+
+<input type="checkbox" id="checkbox1" class="styled">需要一个替代品。
+
+<input type="checkbox" id="checkbox1" class="styled">什么是 cspade 算法
+
+`spade.pdf`
+
+避免hash算法
+方便join
+
+必须要给出证明
+
+discovered pattern
